@@ -4,6 +4,8 @@ ___
 
 A lightweight, fast, and portable build tool for C/C++ projects. This tool aims to be much simpler and more intuitive than CMake, while offering powerful features like wildcard-based source discovery and ignore rules.
 
+I also at some point would like to add a way to make it faster and less complicated to compile code
+
 ## Why
 
  - i have a an issue with how we build project in c, i want it to be faster and more streamlined
@@ -30,7 +32,6 @@ A lightweight, fast, and portable build tool for C/C++ projects. This tool aims 
 - **Glob Support**: Use patterns like `**/*.cpp` to automatically include source files.
 - **Ignore Support**: Exclude files or directories from builds using a `.buildignore` file.
 - **Single Config File**: All settings are managed in a straightforward `build.toml` file.
-- **Cross-Platform**: Built with C++17 and standard libraries to work on any major OS.
 
 ---
 

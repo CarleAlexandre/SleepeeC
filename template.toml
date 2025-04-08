@@ -1,0 +1,11 @@
+
+[TARGET]
+
+	cc = "path"
+	lib = true
+	dynamic = true
+	name = ""
+	flag = "flag"
+	source = ["dir/src/**"]
+	ignore = ["src/test/*.c"]
+	std = "std=c99"
