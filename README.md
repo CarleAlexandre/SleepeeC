@@ -20,33 +20,27 @@ I also at some point would like to add a way to make it faster and less complica
 
  - i would like for it to also enforce certain constrainte for best practice (i will make it a switch for people that don't want them).
 
-### WARNING
-
-	i use IA to create a draft template of this README, for now what is after is ia slope don't refere to it for now
-
 ---
 
 ## ✨ Features
 
 - **Multiple Targets**: Easily build executables, static libraries, or shared libraries.
-- **Glob Support**: Use patterns like `**/*.cpp` to automatically include source files.
-- **Ignore Support**: Exclude files or directories from builds using a `.buildignore` file.
-- **Single Config File**: All settings are managed in a straightforward `build.toml` file.
+- **Glob Support**: Use patterns like `**/*.c` to automatically include source files.
+- **Ignore Support**: Exclude files or directories from builds using a `sc.ignore` file.
+- **Single Config File**: All settings are managed in a straightforward `sc.toml` file.
 
 ---
 
-## Project Structure
+## Exemple Project Structure
 
 ```
 project/
-├── build.toml
-├── .buildignore
+├── sc.toml #could also be sleepeec.toml
+├── sc.ignore #could also be sleepeec.ignore
 ├── src/
-│   └── main.cpp
-├── lib/
-│   └── math.cpp
-└── builder/
-    └── main.cpp  # build tool source
+│   └── main.c
+└── lib/
+    └── math.h
 ```
 
 ---
@@ -57,19 +51,19 @@ project/
 Create a `build.toml` file in your project root:
 
 ```toml
-compiler = "g++"
+compiler = "gcc"
 cflags = "-Wall -O2"
 debug = true
 
 [[target]]
 name = "app"
 type = "executable"
-sources = ["src/**/*.cpp"]
+sources = ["src/**/*.c"]
 
 [[target]]
 name = "math"
 type = "static"
-sources = ["lib/**/*.cpp"]
+sources = ["lib/**/*.c"]
 ```
 
 ### 2. Define Files to Ignore
@@ -77,7 +71,7 @@ Create a `.buildignore` file to exclude unwanted files:
 
 ```
 **/tests/**
-*.test.cpp
+*.test.c
 ```
 
 ### 3. Run the Build Tool
@@ -90,7 +84,11 @@ Create a `.buildignore` file to exclude unwanted files:
 ## Building
 
 ```bash
-g++ -std=c++17 -Ipath/to/toml++ -o builder main.cpp
+make
+```
+ or
+```bash
+gmake
 ```
 
 ---
