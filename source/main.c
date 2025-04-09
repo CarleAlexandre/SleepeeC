@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "toml.h"
 
 /*
 
@@ -151,24 +152,34 @@ context*	initialize_context(int argc, char** argv) {
 	return (ctx);
 }
 
-void	open_file(char* filename) {
+char*	file_load(char* filename) {
+	assert(filename);
 	FILE *file = 0x00;
 
 	file = fopen(filename, "r");
+	assert(!ferror(file));
+
+	fseek(file, 0, SEEK_END);
+	size_t size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+
+	char* text = 0x00;
+	text = malloc(size);
+	assert(text);
+
+	unsigned int count = fread(text, sizeof(char), size, file);
+	if (count < size) {
+		text = realloc(text, count + 1);
+		assert(text);
+	}
+	text[count] = '\0';
+	return (text);
 }
 
 void	open_log(char* logname) {
 	FILE* file = 0x00;
 
 	file = fopen("logname", "w");
-}
-
-//stub i will directly call access
-bool	file_ok(char* filename) {
-	if (access(filename, F_OK | R_OK) == -1) {
-		return (false);
-	}
-	return (true);
 }
 
 bool	directory_ok() {
@@ -187,7 +198,7 @@ int	main(int argc, char** argv) {
 		goto no_arg;
 	}
 
-	printf(" dir: %s\n log: %s\n path: %s\n thrd:%i\n help: %i\n v: %i\n error: %i\n", ctx->directory, ctx->logfile,  ctx->path, ctx->thrd_count, ctx->print_help, ctx->verbose, ctx->error);
+	//printf(" dir: %s\n log: %s\n path: %s\n thrd:%i\n help: %i\n v: %i\n error: %i\n", ctx->directory, ctx->logfile,  ctx->path, ctx->thrd_count, ctx->print_help, ctx->verbose, ctx->error);
 
 	if (ctx->print_help) {
 		goto help;
@@ -204,7 +215,7 @@ no_arg:
 	FILE* file = 0x00;
 
 	if (access("sleepeec.toml", F_OK | R_OK)) {
-		printf("ERRROR: sleepeec.toml is missing or could not be opened\n");
+		printf("ERROR: sleepeec.toml is missing or could not be opened\n");
 		return (-1);
 	}
 

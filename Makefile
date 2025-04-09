@@ -1,2 +1,2 @@
 all:
-	g++ -std=c++17 source/main.cpp
+	gcc -std=c99 -g source/main.c source/toml.c
