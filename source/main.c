@@ -97,11 +97,13 @@ context*	initialize_context(int argc, char** argv) {
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
 			int idx = 0;
+			if (!argv[i][1]) {
+				goto context_error;
+			}
 			idx = cstridx("hdlptv", argv[i][1]);
 			if (idx > 1 && idx < 6) {
 				if (i + 1 > argc) {
-					//goto context_error;
-					assert(0);
+					goto context_error;
 				}
 				i++;
 			}
