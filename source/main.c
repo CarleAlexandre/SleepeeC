@@ -151,9 +151,41 @@ context*	initialize_context(int argc, char** argv) {
 	return (ctx);
 }
 
+void	open_file(char* filename) {
+	FILE *file = 0x00;
+
+	file = fopen(filename, "r");
+}
+
+void	open_log(char* logname) {
+	FILE* file = 0x00;
+
+	file = fopen("logname", "w");
+}
+
+//stub i will directly call access
+bool	file_ok(char* filename) {
+	if (access(filename, F_OK | R_OK) == -1) {
+		return (false);
+	}
+	return (true);
+}
+
+bool	directory_ok() {
+
+}
+
+void	error_handler(error_enum ctx_error) {
+
+}
+
 int	main(int argc, char** argv) {
 	context* ctx = 0x00;
 	ctx = initialize_context(argc, argv);
+
+	if (argc == 1) {
+		goto no_arg;
+	}
 
 	printf(" dir: %s\n log: %s\n path: %s\n thrd:%i\n help: %i\n v: %i\n error: %i\n", ctx->directory, ctx->logfile,  ctx->path, ctx->thrd_count, ctx->print_help, ctx->verbose, ctx->error);
 
@@ -161,12 +193,22 @@ int	main(int argc, char** argv) {
 		goto help;
 	}
 
-	//get arg if after - {char} != "hvltdp" print -h
-	//if -h present then skip all other argument
 	//else look into working directory
 	//if no file then create template file
 
 	//then load file into value structure for each target
+
+	return (0);
+
+no_arg:
+	FILE* file = 0x00;
+
+	if (access("sleepeec.toml", F_OK | R_OK)) {
+		printf("ERRROR: sleepeec.toml is missing or could not be opened\n");
+		return (-1);
+	}
+
+	file = fopen("sleepeec.toml", "r");
 
 	return (0);
 
