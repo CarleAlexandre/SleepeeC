@@ -1,11 +1,13 @@
-//#include "toml.hpp"
+#include <errno.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <direct.h>
+#include <dirent.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "toml.h"
+#include <pthread.h>
 
 /*
 
@@ -173,6 +175,7 @@ char*	file_load(char* filename) {
 		assert(text);
 	}
 	text[count] = '\0';
+	fclose(file);
 	return (text);
 }
 
@@ -182,12 +185,23 @@ void	open_log(char* logname) {
 	file = fopen("logname", "w");
 }
 
-bool	directory_ok() {
-
+bool	directory_ok(char* dirname) {
+	DIR* dir = 0x00;
+	dir = opendir(dirname);
+	if (!dir) {
+		perror("couldn't open dir");
+		return (false);
+	}
+	return (true);
 }
 
 void	error_handler(error_enum ctx_error) {
 
+}
+
+void*	run_cmd(void* arg) {
+	system(arg);
+	return (0x00);
 }
 
 int	main(int argc, char** argv) {
@@ -197,6 +211,16 @@ int	main(int argc, char** argv) {
 	if (argc == 1) {
 		goto no_arg;
 	}
+
+	if (ctx->directory) {
+		directory_ok(ctx->directory);
+	}
+
+
+	pthread_t thread;
+
+	pthread_create(&thread, 0x00, run_cmd, "echo test\n");
+	pthread_join(thread, 0x00);
 
 	//printf(" dir: %s\n log: %s\n path: %s\n thrd:%i\n help: %i\n v: %i\n error: %i\n", ctx->directory, ctx->logfile,  ctx->path, ctx->thrd_count, ctx->print_help, ctx->verbose, ctx->error);
 
