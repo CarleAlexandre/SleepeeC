@@ -192,12 +192,16 @@ void	open_log(char* logname) {
 	file = fopen("logname", "w");
 }
 
-bool	directory_ok(char* dirname) {
+int	directory_ok(char* dirname) {
+	if (!dirname) {
+		return (0);
+	}
+
 	DIR* dir = 0x00;
 	dir = opendir(dirname);
 	if (!dir) {
 		perror("couldn't open dir");
-		return (0);
+		return (-1);
 	}
 	return (1);
 }
@@ -235,7 +239,29 @@ void	cmds_run(cmds cmd) {
 	}
 }
 
-void validate_context() {
+void validate_context(context* ctx) {
+	if (!ctx->path) {
+		//check if paht is set else set to default build file then execture in current working directory
+		ctx->path = strdup("./sleepeec.toml");
+	}
+	switch (directory_ok(ctx->directory)) {
+		case (-1): {
+			ctx->error = invalid_directory;
+			break;
+		}
+		case (1): {
+			chdir(ctx->directory);
+		}
+		default:break;
+	}
+	if (ctx->thrd_count) {
+		if (ctx->thrd_count >= PTHREAD_THREADS_MAX) {
+			printf("Thread count is highet than maximum thread count");
+			ctx->error = invalid_thrd_count;
+		}
+	} else {
+		ctx->thrd_count = 4;
+	}
 
 }
 
@@ -243,61 +269,83 @@ int	main(int argc, char** argv) {
 	context* ctx = 0x00;
 	int errfd = STDERR_FILENO;
 	int outfd = STDOUT_FILENO;
+	int stream = 0;
+	FILE* logfile = 0x00;
+	FILE* null_err = 0x00;
+	FILE* null_out = 0x00;
 
 	if (argc == 1) {
 		return (0);
 	}
 	ctx = initialize_context(argc, argv);
-	validate_context();
+	validate_context(ctx);
 	if (ctx->print_help || ctx->error) {
 		print_helper();
 		int err = ctx->error;
 		return (err);
 	}
 
-	if (ctx->directory) {
-		//set current directory as ctx->directory
-		directory_ok(ctx->directory);
-		chdir(ctx->directory);
-	}
-
 	if (ctx->logfile) {
 		//create a logfile named logfile in working directory
-		FILE* logfile = 0x00;
 		logfile = fopen(ctx->logfile, "w+");
 		if (errno) {
 			perror("couldn't use logfile");
 		}
 		assert(logfile);
-		int stream = fileno(logfile);
+		stream = fileno(logfile);
+		assert(stream);
 		errfd = dup2(STDERR_FILENO, stream);
 		outfd = dup2(STDOUT_FILENO, stream);
-		//at exit close stream and set back errfd and outfd to default out dup2(STDERR_FILENO, errfd);dup2(STDERR_FILENO, errfd); close(stream); fclose(logfile);
-	}
-	if (ctx->path) {
-		//check if sleepeec.toml is in directory then execute in said directory as working directory
-	}
-	if (ctx->thrd_count) {
-		//check if concurrency is enough else fallback to max thread concurrency
-	}
-	if (!ctx->verbose) {
-		//set current stdout and stderr to no opened
+	} else if (!ctx->verbose) {
+			//set current stdout and stderr to no opened
+#ifdef _WIN32
+		null_err = freopen("NUL", "w", stderr);
+		if (errno) {
+			perror("error");
+		}
+		assert(null_err);
+		null_out = freopen("NUL", "w", stdout);
+		if (errno) {
+			perror("error");
+			close(null_err);
+		}
+		assert(null_out);
+#else ifdef _unix_
+		null_err = freopen("/dev/null", "w", stderr);
+		if (errno) {
+			perror("error");
+		}
+		assert(null_err);
+		null_out = freopen("/dev/null", "w", stdout);
+		if (errno) {
+			perror("error");
+			close(null_err);
+		}
+		assert(null_out);
+#endif
 	}
 
-	//else look into working directory
-	//if no file then create template file
-
-	//then load file into value structure for each target
 
 
 	FILE* file = 0x00;
+	file = fopen(ctx->path, "r");
+	if (errno) {
+		perror("Error: file could not be opened");
+	}//maybe create dummy file
+	assert(file);
 
-	if (access("sleepeec.toml", F_OK | R_OK)) {
-		printf("ERROR: sleepeec.toml is missing or could not be opened\n");
-		return (-1);
+	//now parse file and create cmd struct
+
+	fclose(file);
+	if (ctx->logfile) {
+		dup2(STDERR_FILENO, errfd);
+		dup2(STDOUT_FILENO, outfd);
+		close(stream);
+		fclose(logfile);
+	} else if (!ctx->verbose) {
+		fclose(null_err);
+		fclose(null_out);
 	}
-
-	file = fopen("sleepeec.toml", "r");
-
+	//destroy ctx stucture memeber and cmd structure
 	return (0);
 }
