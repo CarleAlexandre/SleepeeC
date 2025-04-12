@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-#include "toml.h"
+//#include "toml.h"
 
 /*
 
@@ -227,7 +227,7 @@ void	cmds_run(cmds cmd) {
 
 	for (int i = 0; i < cmd.size;) {
 		if (current_nthread < cmd.max_thread) {
-			pthread_create(&threads, 0x00, cmd_thread, cmd.argument[i]);
+			pthread_create(&threads[i], 0x00, cmd_thread, cmd.argument[i]);
 			current_nthread++;
 			i++;
 		} else {
@@ -235,6 +235,7 @@ void	cmds_run(cmds cmd) {
 			for (int k = 0; k < cmd.max_thread; k++) {
 				pthread_join(threads[k], 0x00);
 			}
+			current_nthread = 0;
 		}
 	}
 }
@@ -307,10 +308,11 @@ int	main(int argc, char** argv) {
 		null_out = freopen("NUL", "w", stdout);
 		if (errno) {
 			perror("error");
-			close(null_err);
+			fclose(null_err);
 		}
 		assert(null_out);
-#else ifdef _unix_
+#else
+	#ifdef _unix_
 		null_err = freopen("/dev/null", "w", stderr);
 		if (errno) {
 			perror("error");
@@ -319,9 +321,10 @@ int	main(int argc, char** argv) {
 		null_out = freopen("/dev/null", "w", stdout);
 		if (errno) {
 			perror("error");
-			close(null_err);
+			fclose(null_err);
 		}
 		assert(null_out);
+	#endif
 #endif
 	}
 
