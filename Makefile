@@ -1,2 +1,2 @@
 all:
-	gcc -std=c99 -g source/main.c source/toml.c
+	clang -std=c11 -g source/main.c source/toml.c

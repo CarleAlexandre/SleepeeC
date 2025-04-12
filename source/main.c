@@ -1,13 +1,14 @@
-#include <errno.h>
-#include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <stdatomic.h>
+#include <pthread.h>
 #include <direct.h>
 #include <dirent.h>
-#include <stdio.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
 #include "toml.h"
-#include <pthread.h>
 
 /*
 
@@ -61,6 +62,12 @@ typedef struct {
 	char*		path;
 	error_enum	error;
 }	context;
+
+typedef struct {
+	char**	argument;
+	uint8_t	size;
+	uint8_t	max_thread;
+}	cmds;
 
 void	print_helper() {
 	printf("-h show this output\n"\
@@ -190,42 +197,91 @@ bool	directory_ok(char* dirname) {
 	dir = opendir(dirname);
 	if (!dir) {
 		perror("couldn't open dir");
-		return (false);
+		return (0);
 	}
-	return (true);
+	return (1);
+}
+
+void	print_ctx(context* ctx) {
+	printf(" dir: %s\n log: %s\n path: %s\n thrd:%i\n help: %i\n v: %i\n error: %i\n", ctx->directory, ctx->logfile,  ctx->path, ctx->thrd_count, ctx->print_help, ctx->verbose, ctx->error);
 }
 
 void	error_handler(error_enum ctx_error) {
 
 }
 
-void*	run_cmd(void* arg) {
+void*	cmd_thread(void* arg) {
 	system(arg);
 	return (0x00);
 }
 
+void	cmds_run(cmds cmd) {
+	pthread_t	*threads;
+	uint32_t	current_nthread = 0;
+	threads = malloc(sizeof(pthread_t) * cmd.max_thread);
+	assert(threads);
+
+	for (int i = 0; i < cmd.size;) {
+		if (current_nthread < cmd.max_thread) {
+			pthread_create(&threads, 0x00, cmd_thread, cmd.argument[i]);
+			current_nthread++;
+			i++;
+		} else {
+			uint32_t joined = 0;
+			for (int k = 0; k < cmd.max_thread; k++) {
+				pthread_join(threads[k], 0x00);
+			}
+		}
+	}
+}
+
+void validate_context() {
+
+}
+
 int	main(int argc, char** argv) {
 	context* ctx = 0x00;
-	ctx = initialize_context(argc, argv);
+	int errfd = STDERR_FILENO;
+	int outfd = STDOUT_FILENO;
 
 	if (argc == 1) {
-		goto no_arg;
+		return (0);
+	}
+	ctx = initialize_context(argc, argv);
+	validate_context();
+	if (ctx->print_help || ctx->error) {
+		print_helper();
+		int err = ctx->error;
+		return (err);
 	}
 
 	if (ctx->directory) {
+		//set current directory as ctx->directory
 		directory_ok(ctx->directory);
+		chdir(ctx->directory);
 	}
 
-
-	pthread_t thread;
-
-	pthread_create(&thread, 0x00, run_cmd, "echo test\n");
-	pthread_join(thread, 0x00);
-
-	//printf(" dir: %s\n log: %s\n path: %s\n thrd:%i\n help: %i\n v: %i\n error: %i\n", ctx->directory, ctx->logfile,  ctx->path, ctx->thrd_count, ctx->print_help, ctx->verbose, ctx->error);
-
-	if (ctx->print_help) {
-		goto help;
+	if (ctx->logfile) {
+		//create a logfile named logfile in working directory
+		FILE* logfile = 0x00;
+		logfile = fopen(ctx->logfile, "w+");
+		if (errno) {
+			perror("couldn't use logfile");
+		}
+		assert(logfile);
+		int stream = fileno(logfile);
+		errfd = dup2(STDERR_FILENO, stream);
+		outfd = dup2(STDOUT_FILENO, stream);
+		//at exit close stream and set back errfd and outfd to default out dup2(STDERR_FILENO, errfd);dup2(STDERR_FILENO, errfd); close(stream); fclose(logfile);
+	}
+	if (ctx->path) {
+		//check if sleepeec.toml is in directory then execute in said directory as working directory
+	}
+	if (ctx->thrd_count) {
+		//check if concurrency is enough else fallback to max thread concurrency
+	}
+	if (!ctx->verbose) {
+		//set current stdout and stderr to no opened
 	}
 
 	//else look into working directory
@@ -233,9 +289,7 @@ int	main(int argc, char** argv) {
 
 	//then load file into value structure for each target
 
-	return (0);
 
-no_arg:
 	FILE* file = 0x00;
 
 	if (access("sleepeec.toml", F_OK | R_OK)) {
@@ -244,12 +298,6 @@ no_arg:
 	}
 
 	file = fopen("sleepeec.toml", "r");
-
-	return (0);
-
-help:
-
-	print_helper();
 
 	return (0);
 }
