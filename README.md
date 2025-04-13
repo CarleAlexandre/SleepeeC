@@ -51,19 +51,15 @@ project/
 Create a `build.toml` file in your project root:
 
 ```toml
+[[target_name]]
 compiler = "gcc"
-cflags = "-Wall -O2"
-debug = true
-
-[[target]]
-name = "app"
-type = "executable"
+flags = "-Wall -O2"
+static_lib = false
+strict_mode = false
+dynamic_lib = false
 sources = ["src/**/*.c"]
+exlude = [""]
 
-[[target]]
-name = "math"
-type = "static"
-sources = ["lib/**/*.c"]
 ```
 
 ### 2. Define Files to Ignore

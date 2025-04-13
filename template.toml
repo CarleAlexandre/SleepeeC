@@ -1,6 +1,5 @@
 
 [TARGET]
-
 	cc = "path"
 	lib = true
 	dynamic = true

@@ -1,0 +1,8 @@
+[sc_out]
+	compiler = "gcc"
+	flags = "-Wall -O2"
+	static_lib = false
+	strict_mod = false
+	dynamic_lib = false
+	sources = ["src/**/*.c"]
+	exludes = [""]

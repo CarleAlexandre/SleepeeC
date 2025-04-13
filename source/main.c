@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-//#include "toml.h"
+#include "toml.h"
 
 /*
 
@@ -31,6 +31,9 @@ if enforce these flag are use :
 */
 
 #define MAX_PATH_LENGTH 0 //for security reason could set it to MAX_PATH
+#define MAX_SOURCES 128
+#define MAX_TARGET 64
+
 
 typedef enum {
 	invalid_stub,
@@ -42,16 +45,15 @@ typedef enum {
 }	error_enum;
 
 typedef struct {
-	bool	library;
-	bool	dynamic;
-	bool	enforce_secure;
+	bool	static_library;
+	bool	dynamic_library;
+	bool	strict_mod;
 	char*	target_name;
 	char*	compiler_path;
 	char*	calling_name;
 	char*	flag;
-	char*	source;
-	char*	ignore;
-}	target;
+	char*	sources[MAX_SOURCES];
+}	target_t;
 
 typedef struct {
 	bool		print_help;
@@ -210,10 +212,6 @@ void	print_ctx(context* ctx) {
 	printf(" dir: %s\n log: %s\n path: %s\n thrd:%i\n help: %i\n v: %i\n error: %i\n", ctx->directory, ctx->logfile,  ctx->path, ctx->thrd_count, ctx->print_help, ctx->verbose, ctx->error);
 }
 
-void	error_handler(error_enum ctx_error) {
-
-}
-
 void*	cmd_thread(void* arg) {
 	system(arg);
 	return (0x00);
@@ -263,7 +261,61 @@ void validate_context(context* ctx) {
 	} else {
 		ctx->thrd_count = 4;
 	}
+}
 
+void	lexer(char* data) {
+	toml_table_t *root = toml_parse(data, 0x00, 0);
+	assert(root);
+	//need to return the config to then execute and clear it
+	target_t config[MAX_TARGET] = {};
+
+	for (int i = 0; i < MAX_TARGET; i++) {
+		const char* key = toml_key_in(root, i);
+		if (!key) {
+			break;
+		}
+		// name = key
+		config[i].target_name = strdup(key);
+		toml_table_t *target = toml_table_in(root, key);
+		toml_datum_t cc = toml_string_in(target, "compiler");
+		if (cc.ok) {
+			config[i].compiler_path = cc.u.s;
+		}
+		toml_datum_t flag = toml_string_in(target, "flags");
+		if (flag.ok) {
+			config[i].flag = flag.u.s;
+		}
+		toml_datum_t static_lib = toml_bool_in(target, "static_lib");
+		if (static_lib.ok) {
+			config[i].static_library = static_lib.u.b;
+		}
+		toml_datum_t dynamic_lib = toml_bool_in(target, "dynamic_lib");
+		if (dynamic_lib.ok) {
+			config[i].dynamic_library = dynamic_lib.u.b;
+		}
+		toml_datum_t strict_mod = toml_bool_in(target, "strict_mod");
+		if (strict_mod.ok) {
+			config[i].strict_mod = strict_mod.u.b;
+		}
+		toml_array_t *sources = toml_array_in(target, "sources");
+		assert(sources);
+		for (int k = 0; ;k++) {
+			toml_datum_t src_file = toml_string_at(sources, k);
+			if (!src_file.ok) {
+				break;
+			}
+			//add source path to sources
+		}
+		toml_array_t *excludes = toml_array_in(target, "excludes");
+		assert(excludes);
+		for (int k = 0; ;k++) {
+			toml_datum_t exclude_file = toml_string_at(excludes, k);
+			if (!exclude_file.ok) {
+				break;
+			}
+			//exclude path from sources
+		}
+	}
 }
 
 int	main(int argc, char** argv) {
