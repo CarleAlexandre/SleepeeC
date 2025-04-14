@@ -1,71 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <stdatomic.h>
-#include <pthread.h>
-#include <direct.h>
-#include <dirent.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
-#include "toml.h"
-
-/*
-
-[TARGET]
-cc = "path"
-lib = true
-dynamic = true
-name = ""
-flag = "flag"
-source = ["dir/src/\**"]
-ignore = ["src/test/\*.c"]
-std = "std=c99"
-
-if enforce these flag are use :
-
--Wall -Wextra -Wpedantic -Wshadow -Wundef -Werror -Wno-unused-parameter -fstrict-aliasing -fno-strict-overflow -fwrapv
-
-*/
-
-#define MAX_PATH_LENGTH 0 //for security reason could set it to MAX_PATH
-#define MAX_SOURCES 128
-#define MAX_TARGET 64
-
-
-typedef enum {
-	invalid_stub,
-	invalid_directory,
-	invalid_argument,
-	invalid_file_missing,
-	invalid_thrd_count,
-	invalid_file_bad,
-}	error_enum;
-
-typedef struct {
-	bool	static_library;
-	bool	dynamic_library;
-	bool	strict_mod;
-	char*	name;
-	char*	compiler_path;
-	char*	cflag;
-	char*	lflag;
-	char**	sources;
-	size_t	source_size;
-}	target_t;
-
-typedef struct {
-	bool		print_help;
-	int		thrd_count;
-	char*		directory;
-	char*		path;
-	error_enum	error;
-}	context;
-
-typedef struct {
-	target_t*	data;
-	size_t		size;
-}	config_t;
+#include "sleepeec.h"
 
 void	print_helper() {
 	printf("-h show this output\n"\
@@ -337,7 +270,7 @@ cmds_t	gen_target_cmds(target_t target) {
 		assert(ret.first_level[i]);
 	}
 	//need to set all .c to .o then put all of them into obj/target/*.o
-	ret.second_level = string_format("%s -o %s %s %s", target.compiler_path, target.name, target.lflag, target.static_library ? "" : target.dynamic_library ? "" : "");
+	ret.second_level = string_format("%s -o %s %s %s", target.static_library ? "ar rcs" : target.compiler_path, target.name, target.lflag, target.dynamic_library ? "-fPIC -shared" : "");
 
 	return (ret);
 }

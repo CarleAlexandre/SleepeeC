@@ -1,2 +1,2 @@
 all:
-	clang -std=c11 -g source/main.c -pthread -o scc
+	clang -std=c11 -ggdb source/*.c -pthread -o scc
