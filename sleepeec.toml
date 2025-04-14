@@ -1,8 +1,8 @@
 [sc_out]
 	compiler = "gcc"
-	flags = "-Wall -O2"
+	cflag = "-Wall -O2"
+	lflag = "-lGl"
 	static_lib = false
 	strict_mod = false
 	dynamic_lib = false
-	sources = ["src/**/*.c"]
-	exludes = [""]
+	sources = ["src/tmp/*.c"]

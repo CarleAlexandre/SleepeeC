@@ -24,9 +24,7 @@ std = "std=c99"
 
 if enforce these flag are use :
 
--Wall -Wextra -Wpedantic -Wshadow -Wundef -Werror -Wno-unused-parameter
--fstrict-aliasing -fno-strict-overflow
--fwrapv
+-Wall -Wextra -Wpedantic -Wshadow -Wundef -Werror -Wno-unused-parameter -fstrict-aliasing -fno-strict-overflow -fwrapv
 
 */
 
@@ -48,11 +46,12 @@ typedef struct {
 	bool	static_library;
 	bool	dynamic_library;
 	bool	strict_mod;
-	char*	target_name;
+	char*	name;
 	char*	compiler_path;
-	char*	calling_name;
-	char*	flag;
-	char*	sources[MAX_SOURCES];
+	char*	cflag;
+	char*	lflag;
+	char**	sources;
+	size_t	source_size;
 }	target_t;
 
 typedef struct {
@@ -65,7 +64,7 @@ typedef struct {
 
 typedef struct {
 	target_t*	data;
-	size_t		size
+	size_t		size;
 }	config_t;
 
 void	print_helper() {
@@ -261,15 +260,19 @@ config_t	lexer(char* data) {
 			break;
 		}
 		// name = key
-		config[i].target_name = strdup(key);
+		config[i].name = strdup(key);
 		toml_table_t *target = toml_table_in(root, key);
 		toml_datum_t cc = toml_string_in(target, "compiler");
 		if (cc.ok) {
 			config[i].compiler_path = cc.u.s;
 		}
-		toml_datum_t flag = toml_string_in(target, "flags");
-		if (flag.ok) {
-			config[i].flag = flag.u.s;
+		toml_datum_t cflag = toml_string_in(target, "cflag");
+		if (cflag.ok) {
+			config[i].cflag = cflag.u.s;
+		}
+		toml_datum_t lflag = toml_string_in(target, "lflag");
+		if (lflag.ok) {
+			config[i].cflag = lflag.u.s;
 		}
 		toml_datum_t static_lib = toml_bool_in(target, "static_lib");
 		if (static_lib.ok) {
@@ -285,21 +288,14 @@ config_t	lexer(char* data) {
 		}
 		toml_array_t *sources = toml_array_in(target, "sources");
 		assert(sources);
-		for (int k = 0; ;k++) {
+		config->source_size = toml_array_nelem(sources);
+		config->sources = malloc(sizeof(config->source_size));
+		assert(config->sources);
+		for (int k = 0; k < config->source_size; k++) {
 			toml_datum_t src_file = toml_string_at(sources, k);
-			if (!src_file.ok) {
-				break;
+			if (src_file.ok) {
+				config->sources[k] = src_file.u.s;
 			}
-			//add source path to sources
-		}
-		toml_array_t *excludes = toml_array_in(target, "excludes");
-		assert(excludes);
-		for (int k = 0; ;k++) {
-			toml_datum_t exclude_file = toml_string_at(excludes, k);
-			if (!exclude_file.ok) {
-				break;
-			}
-			//exclude path from sources
 		}
 	}
 	config_t ret = {
@@ -307,6 +303,42 @@ config_t	lexer(char* data) {
 		.size = table_size,
 	};
 	toml_free(root);
+	return (ret);
+}
+
+typedef struct {
+	char**	first_level;//used to create object *.o
+	char*	second_level;//used to create target, *.exe, *.out, *.so, *.a, *.dll
+}	cmds_t;
+
+#include <stdarg.h>
+
+char*	string_format(const char* fmt, ...) {
+	va_list args;
+	char buffer[4096] = {0};
+
+	va_start(args, fmt);
+	int counter = vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+
+	char* ret = calloc(counter + 1, sizeof(char));
+	assert(ret);
+	memcpy(ret, buffer, counter);
+	return (ret);
+}
+
+cmds_t	gen_target_cmds(target_t target) {
+	cmds_t ret = {0};
+
+	ret.first_level = malloc(sizeof(char*) * target.source_size);
+	assert(ret.first_level);
+	for (int i = 0; i < target.source_size; i++) {
+		ret.first_level[i] = string_format("%s -c %s %s", target.compiler_path, target.sources[i], target.cflag, target.strict_mod ? "-Wall -Wextra -Wpedantic -Wshadow -Wundef -Werror -Wno-unused-parameter -fstrict-aliasing -fno-strict-overflow -fwrapv" : "");
+		assert(ret.first_level[i]);
+	}
+	//need to set all .c to .o then put all of them into obj/target/*.o
+	ret.second_level = string_format("%s -o %s %s %s", target.compiler_path, target.name, target.lflag, target.static_library ? "" : target.dynamic_library ? "" : "");
+
 	return (ret);
 }
 
@@ -330,6 +362,7 @@ int	main(int argc, char** argv) {
 	char**		cmds = 0x00;
 	// need to make cmd for all cmd and if a cmd need other to finish before executing so i need to rethink this part
 	for (int i = 0; i < config.size; i++) {
+		config.data[i];
 		//append cmd to cmds;
 	}
 	cmds_run(cmds, 0);
